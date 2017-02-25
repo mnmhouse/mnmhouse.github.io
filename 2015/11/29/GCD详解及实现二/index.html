@@ -1,0 +1,211 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>GCD详解及实现二 常用API | Mnmhouse</title>
+  <meta name="author" content="house">
+  
+  <meta name="description" content="dispatch_set_target_queue因为用dispatch_queue_create函数生成的Dispatch Queue不管是Serial Dispatch Queue还是Concurrent Dispatch Queue其优先级都使用与默认优先级Global Dispatch Qu">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="GCD详解及实现二 常用API"/>
+  <meta property="og:site_name" content="Mnmhouse"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Mnmhouse" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Mnmhouse</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-11-29T01:38:51.000Z"><a href="/2015/11/29/GCD详解及实现二/">2015-11-29</a></time>
+      
+      
+  
+    <h1 class="title">GCD详解及实现二 常用API</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="dispatch_set_target_queue">dispatch_set_target_queue</h1><p>因为用dispatch_queue_create函数生成的Dispatch Queue不管是Serial Dispatch Queue还是Concurrent Dispatch Queue其优先级都使用与默认优先级Global Dispatch Queue相同执行优先级的线程。变更的Dispatch Queue的执行优先级，则可以使用dispatch_set_target_queue方法，例如,设置在后台执行动作处理的Serial Dispatch Queue,：<br>dispatch_queue_t mySerialQueue = dispatch_queue_create(“com.set.gcd”,NULL);<br>dispatch_queue_t myGlobalDispatch = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND,0);<br>dispatch_set_traget_queue(mySerialQueue,myGlobalDispatch);</p>
+<h2 id="注意1、dispatch_set_target_queue函数的第一个参数，不能指定为系统提供的Main_Dispatch_Queue和Global_Dispatch_Queue-">注意1、dispatch_set_target_queue函数的第一个参数，不能指定为系统提供的Main Dispatch Queue和Global Dispatch Queue.</h2><p>##注意2、在多个Serial Dispatch Queue中使用该函数指定目标为某一个Serial Dispatch Queue,那么原本应执行的多个Serial Dispatch Queue，在目标Serial Dispatch Queue上只能同时执行一个处理。</p>
+<h1 id="dispatch_after">dispatch_after</h1><p>如果想在指定时间后执行某些处理，则可以使用dispatch_after函数来实现。<br>dispatch_time_t time =dispatch_time(DISPATCH_TIME_NOW,3ull*NSEC_PER_SEC);<br>dispatch_after(time,dispatch_get_main_queue,^{<br>    NSLog(@”等待至少三秒。”);<br>});<br> 需要注意的是，任务只是在指定时间追加处理到Dispatch Queue。因为 Main Dispatch Queue在主线程runloop中执行，所以在比如每隔1/60秒执行的Runloop中，Block最快在三秒后执行，最慢在3s＋1/60秒执行。并且如果主线程还有许多大量任务及UI要处理这个时间会更久。因此严格时间要求下不是很适合，大致延迟多久才更适用。</p>
+<h3 id="dispatch_time中第一个参数表示指定的时间开始，到第二个参数指定的毫微秒单位后的时间。">dispatch_time中第一个参数表示指定的时间开始，到第二个参数指定的毫微秒单位后的时间。</h3><p> 其中， DISPATCH_TIME_NOW这表示现在的时间。<br> 1ull是c语言的数值字面量，是显示表明类型时使用的字符串（表示unsigned long long）。NSEC_PER_SEC毫微秒为单位，NSEC_PER_MSEC毫秒<br>dispatch_time函数常用于计算相对时间,另外还有一个函数 dispatch_walltime用于计算绝对时间。</p>
+<h1 id="Dispatch_Group">Dispatch Group</h1><p>在追加到Dispatch Queue中的多个处理全部结束后想执行结束处理。只使用一个Serial Dispatch Queue可以实现，但是当使用Concurrent Dispatch Queue或同时使用多个Dispatch Queue时，源代码就会变得颇为复杂。这时候Dispatch Group就派上用场了。<br>如：<br>disptach_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0);<br>dispatch_group_t group = dispatch_group_create();<br>dispatch_group_async(group,queue,^{NSLog(@”bloko”)});<br>dispatch_group_async(group,queue,^{NSLog(@”blok1”)});<br>dispatch_group_async(group,queue,^{NSLog(@”blok2”)});<br>dispatch_group_notify(group,dispatch_get_main_queue(),^{NSLog(@”done”)});<br>dispatch_release(group);</p>
+<p>dispatch_group_async类似dispatch_async，追加Block到指定的Dispatch Queue中，不同之处第一个参数指明了block属于指定的Didpatch Group.</p>
+<p>在追加到dispatch_group中处理全部执行结束时，使用dispatch_group_notify函数会将执行的block追加到Dispatch Queue中。不管指定什么样的Dispatch Queue，当执行BLock时，表明group 中全部处理都完成了。</p>
+<p>也可以 使用dispatch_group_wait函数仅等待全部处理执行结束。<br>disptach_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0);<br>dispatch_group_t group = dispatch_group_create();<br>dispatch_group_async(group,queue,^{NSLog(@”bloko”)});<br>dispatch_group_async(group,queue,^{NSLog(@”blok1”)});<br>dispatch_group_async(group,queue,^{NSLog(@”blok2”)});<br>dispatch_group_wait(group,DISPATCH_TIME_FOREVER);<br>dispatch_release(group);</p>
+<h1 id="dispatch_barrier_async">dispatch_barrier_async</h1><p>dispatch_barrier_async会等待追加到concurrent Dispatch Queue上的并行执行的处理全部结束后，再将指定的处理追加到concurrent Dispatch Queue中。然后等待dispatch_barrier_async函数追加的处理结束后，concurrent Dispatch Queue才恢复为一般的动作，追加到concurrent Dispatch Queue的处理又开始并行执行。这样可实现高效率的数据库访问和文件访问。</p>
+<h1 id="dispatch_sync">dispatch_sync</h1><p>稍有不慎就造成线程死锁，<br>如：dispatch_queue_t queue =dispatch_get_main_queue();<br>dispatch_sync(queue,^{<br>    NSLog(@”Hello”);<br>});<br>该线程在主线程执行指定的Block，并等待其执行结束。而其实主线程正在执行这些源代码，所以无法执行追加到Main Dispatch Queue的Block。</p>
+<p>#dispatch_apply<br>dispatch_apply函数是dispatch_sync函数和Dispatch Group的关联API。该函数按指定的次数将指定的Block追加到指定的Dispatch Queue中，并等待全部处理执行结束。如：<br>disptach_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0);<br>dispatch_apply(10,queue,^(size_t index){<br>    NSlog(@”%zu”,index);<br>});<br>    NSlog(@”done”);<br>    执行结果：4，2，1，3，5，6，8，7，9 done<br>    因为在Global Dispatch Queue中执行处理，所以各个处理执行时间不定，但是输出done肯定是在最后的位置，因为dispatch_apply会等待所有执行结束。第一个参数为重复次数，第二个参数为追加对象的Disptach Queue第三个参数为追加的处理，其中第三个Block为带参数的Block。这样在操作NSArray时，可以不用编写for循环，利用该函数就可以实现如下。</p>
+<p>disptach_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0);<br>dispatch_apply([array count],queue,^(size_t index){<br>    NSlog(@”%zu:%@”,index,[array objectAtIndex:index]);<br>});</p>
+<h1 id="dispatch_suspend/dispatch_resume">dispatch_suspend/dispatch_resume</h1><p>dispatch_suspend(queue);挂起指定的Dispatch Queue<br>dispatch_resume(queue);恢复指定的 Dispatch Queue<br>这两个函数，对已经执行的处理没有影响，挂起后，追加到 Dispatch Queue中尚未执行的处理在此之后停止执行。而恢复则使得这些处理能够继续执行。</p>
+<p>#Dispatch Semaphore<br>相比较Serial Dispatch Queue和dispatch_barrier_async函数而言，Dispatch Semaphore提供更细粒度的排他控制，Dispatch Semaphore是持有计数的信号，该计数是多线程编程中的计数类型信号。<br>生成方法:dispatch_semaphore_t semaphore = dispatch_semaphore_create(1);<br>dispatch_semaphore_wait(semaphore,DISPATCH_TIME_FOREVER);<br>dispatch_semaphore_waith函数等待Dispatch Semaphore的计数值达到大于或者等于1<br>dispatch_semaphore_signal函数将Dispatch Semaphore的计数值加1.<br>如：<br>disptach_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0);<br>dispatch_semaphore_t semaphore = dispatch_semaphore_create(1);<br>NSMutableArray *array = [NSMutableArray array];<br>for(int i= 0,i&lt;10000;i++){<br>    dispatch_async(queue,^{<br>       dispatch_semaphore_wait(semaphore,DISPATCH_TIME_FOREVER);<br>       [array addObject:[NSNumber numberWithInt:i]];<br>       dispatch_semaphore_signal(semaphore);<br>    });<br>}</p>
+<h1 id="dispatch_once">dispatch_once</h1><p>保证应用程序中只执行一次指定处理的API，经常出现于初始化代码。<br>static disptch_once_t pred;<br>disapatch_once(&amp;pred,^{<br>    //初始化<br>});<br>该源代码在多线程和多核CPU中也能保证百分之百安全。<br>以上介绍了 GCD中常见的API，另外在读取大文件时，可以将文件分成合适大小，使用Global Dispatch Queue并列读取。GCD中提供Dipsatch I/O和Dispatch Data进行处理。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/IOS开发/">IOS开发</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/gcd/">gcd</a>, <a href="/tags/github/">github</a>, <a href="/tags/ios/">ios</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://mnmhouse.github.io/2015/11/29/GCD详解及实现二/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:mnmhouse.github.io">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Hexo/">Hexo</a><small>1</small></li>
+  
+    <li><a href="/categories/IOS开发/">IOS开发</a><small>6</small></li>
+  
+    <li><a href="/categories/life/">life</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/core-animation/">core animation</a><small>2</small></li>
+  
+    <li><a href="/tags/gcd/">gcd</a><small>5</small></li>
+  
+    <li><a href="/tags/github/">github</a><small>9</small></li>
+  
+    <li><a href="/tags/hexo/">hexo</a><small>3</small></li>
+  
+    <li><a href="/tags/ios/">ios</a><small>5</small></li>
+  
+    <li><a href="/tags/life/">life</a><small>2</small></li>
+  
+    <li><a href="/tags/生活/">生活</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 house
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

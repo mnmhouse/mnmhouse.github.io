@@ -1,0 +1,204 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>iOS绘图功能 | Mnmhouse</title>
+  <meta name="author" content="house">
+  
+  <meta name="description" content="iOS 系统层级介绍  iOS大致分为四层：Core OS层、Core Services层、Media层以及Cocoa Touch层。Core OS   最底层功能提供了文件系统、线程管理、网络、I/O、内存管理、数学计算、安全服务、外部设备管理等。
+Core Service层 提供了大量系统服务，">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="iOS绘图功能"/>
+  <meta property="og:site_name" content="Mnmhouse"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Mnmhouse" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Mnmhouse</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-12-04T15:38:51.000Z"><a href="/2015/12/04/GCD详解及实现三/">2015-12-04</a></time>
+      
+      
+  
+    <h1 class="title">iOS绘图功能</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="iOS_系统层级介绍_iOS大致分为四层：Core_OS层、Core_Services层、Media层以及Cocoa_Touch层。">iOS 系统层级介绍  iOS大致分为四层：Core OS层、Core Services层、Media层以及Cocoa Touch层。</h1><h4 id="Core_OS">Core OS</h4><p>   最底层功能提供了文件系统、线程管理、网络、I/O、内存管理、数学计算、安全服务、外部设备管理等。</p>
+<h4 id="Core_Service层">Core Service层</h4><p> 提供了大量系统服务，包括GCD、应用内购买、位置服务、Sqlite、xml支持、字符串管理,如同 Core OS它也扮演幕后角色</p>
+<h3 id="Media层">Media层</h3><p> 提供了图像、声音、视频技术，将多媒体体验带到移动平台上。</p>
+<h3 id="Cocoa_Touch层">Cocoa Touch层</h3><p>包括了多任务、数据保护、推送通知、本地通知、设备间通讯、手势识别、标准视图控制器，应用与用户交互大多发生在这一层。</p>
+<h1 id="iOS_Media层图形技术">iOS Media层图形技术</h1><p>iOS中图形技术分两种：OpenGL ES、核心图库（Core Graphic）,OpenGL是苹果支持的，开发2D或3D程序的一些列跨平台API，也是业界标准，广泛应用于游戏开发。<br>另外Core Graphic是iOS原生的核心图库，与Open GL相比，更适合绘制简单的几何图形，也更适合于面向对象开发，非常方便在UIView上通过drawRect：方法完成绘图。</p>
+<h3 id="Quartz_2D">Quartz 2D</h3><p>Quartz 2D是基于向量的二维绘图引擎。基于向量是指使用Quartz 2D绘图时，往往使用Quartz 2D的坐标系（用户空间）而非视图的坐标系。Quartz2D坐标原点与iOS系统坐标系是不同的，<br>一个在左上角一个在左下角。<br>CTM当前变化举证，将绘图用户空间映射到设备空间。</p>
+<h3 id="贝济埃路径">贝济埃路径</h3><p>UIBezierPath 采用系统坐标系，因此没有任何坐标系转换的麻烦，另外它是在Core Graphic基础上封装而成，因此拥有Core Graphic主要功能，却无需考虑图形环境。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/IOS开发/">IOS开发</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/gcd/">gcd</a>, <a href="/tags/github/">github</a>, <a href="/tags/ios/">ios</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://mnmhouse.github.io/2015/12/04/GCD详解及实现三/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:mnmhouse.github.io">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Hexo/">Hexo</a><small>1</small></li>
+  
+    <li><a href="/categories/IOS开发/">IOS开发</a><small>6</small></li>
+  
+    <li><a href="/categories/life/">life</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/core-animation/">core animation</a><small>2</small></li>
+  
+    <li><a href="/tags/gcd/">gcd</a><small>5</small></li>
+  
+    <li><a href="/tags/github/">github</a><small>9</small></li>
+  
+    <li><a href="/tags/hexo/">hexo</a><small>3</small></li>
+  
+    <li><a href="/tags/ios/">ios</a><small>5</small></li>
+  
+    <li><a href="/tags/life/">life</a><small>2</small></li>
+  
+    <li><a href="/tags/生活/">生活</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 house
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

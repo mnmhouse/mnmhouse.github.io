@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>GCD详解及实现 | Mnmhouse</title>
+  <meta name="author" content="house">
+  
+  <meta name="description" content="#GCD－概要
+##什么是GCDGCD-Grand Central Dispatch 是异步执行的任务之一，将应用程序中线程管理用的带来在系统级中进行实现，开发者只要将任务追加到适当的Dispatch Queue中，GCD就能生成必要的线程并计划执行任务，GCD使用非常简洁的记述方式，实现了颇为复杂">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="GCD详解及实现"/>
+  <meta property="og:site_name" content="Mnmhouse"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Mnmhouse" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Mnmhouse</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-11-29T01:38:51.000Z"><a href="/2015/11/29/GCD及实现/">2015-11-29</a></time>
+      
+      
+  
+    <h1 class="title">GCD详解及实现</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>#GCD－概要</p>
+<p>##什么是GCD<br>GCD-Grand Central Dispatch 是异步执行的任务之一，将应用程序中线程管理用的带来在系统级中进行实现，开发者只要将任务追加到适当的Dispatch Queue中，GCD就能生成必要的线程并计划执行任务，GCD使用非常简洁的记述方式，实现了颇为复杂的多线程编程。<br>（Dispatch Queue）－执行处理的等待队列，应用程序开发人员，通过dispathc_async函数等api，在block语法中，编写需要执行的处理，并将其追加到Dispatch Queue中进行处理。<br>例如，dispatch_async(queue,^{<br>     执行长时间处理的任务，如数据库查询、访问。<br>     长时间处理结束，这时候通常需要调用主线程处理结果。<br>     这时候调用，<br>     dispatch_async(dispatch_get_main_queue(),^{<br>        在主线程可执行的处理，如用户界面更新。<br>     });<br>});<br>多线程中存在的问题：<br>  多个线程操作同一个资源导致数据不一致（数据竞争）<br>  死锁－多个线程持续相互等待<br>  太多线程消耗大量内存<br>多线程的优点，可以保证应用程序的响应性能，在ios开发中使用多线程编程在执行长时间处理时仍可保证用户界面的响应性能。而苹果提供的GCD大大简化了偏于复杂多线程编码的源代码。</p>
+<p>#GCD的主要API</p>
+<p>##dispatch queue的创建。<br> dispatch_queue执行处理的等待队列，有两种方式的dispatch_queue。serial dispatch queue,需要等待现执行中处理结束后才执行下一个任务。<br> concurrent dispatch queue，不等待现在执行中处理结束。可以并行执行多个处理，并行处理的数量取决于当前系统的状态（cpu核心数、dispatch queue处理数，cpu负荷等系统状态）；<br>创建方式有两种：</p>
+<p>###方法一、通过GCD提供的API生成Dispatch Queue<br>dispatch_queue_t  mySelfDefineDispatchQueue=dispatch_queue_create(“com.house.zhang”,NULL); 参数一指定了dispatch queue的名称（建议使用应用程序ID－在调试，崩溃log中会标示），参数二代表dispatch queue类型，当为serial dipatch queue时该参数设置为NULL，另外一种则设置为DISPATCH_QUEUE_CONCURRENT</p>
+<p>###方法二、获取系统标准提供的的Dispatch Queue<br>系统提供了，Main Dispatch Queue和Global Dispatch Queue。<br>Main Dispatch Queue是在主线程中执行的Dispatch Queue，因为主线程只有一个，所以其类型为serial dispatch queue,追加到，Main Dispatch Queue的处理在主线程的RunLoop中执行，由于在主线程中执行，因此要将用户界面更新等一些必须在主线程执行的处理追加到Main Dispatch Queue中使用。与NSObject类中的performSelectorOnMainThread方法相同。<br>Global Dispatch queue是所有应用程序都能够使用的Concurrent Dispatch Queue。没要必要自己去创建，获取Global dispatch queue使用就够了。<br>获取方法<br>dispatch_queue_t mainDispatchQueue = dipatch_get_main_queue();<br>dispatch_queue_t globalDispatchQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH,0);<br>Global dispatch queue有四个执行优先级，DISPATCH_QUEUE_PRIORITY_HIGH、DISPATCH_QUEUE_PRIORITY_DEFAULT,DISPATCH_QUEUE_PRIORITY_LOW,DISPATCH_QUEUE_PRIORITY_BACKGROUND.<br>例子：<br>／＊＊在默认优先级的Global Dispatch Queue中执行Block＊＊／<br>dipatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0),^{<br>    /<em>执行长时间处理的任务</em>/<br>     dispatch_async(dispatch_get_main_queue(),^{<br>        在主线程可执行的处理，如用户界面更新。<br>     });<br>});</p>
+
+      
+    </div>
+    <footer>
+      
+        
+  
+  <div class="categories">
+    <a href="/categories/IOS开发/">IOS开发</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/gcd/">gcd</a>, <a href="/tags/github/">github</a>, <a href="/tags/ios/">ios</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+      <div id="fb-root"></div>
+<script>
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=123456789012345";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="fb-comments" data-href="http://mnmhouse.github.io/2015/11/29/GCD及实现/index.html" data-num-posts="5" data-width="840" data-colorscheme="light"></div>
+      
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:mnmhouse.github.io">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">分類</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/Hexo/">Hexo</a><small>1</small></li>
+  
+    <li><a href="/categories/IOS开发/">IOS开发</a><small>6</small></li>
+  
+    <li><a href="/categories/life/">life</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/core-animation/">core animation</a><small>2</small></li>
+  
+    <li><a href="/tags/gcd/">gcd</a><small>5</small></li>
+  
+    <li><a href="/tags/github/">github</a><small>9</small></li>
+  
+    <li><a href="/tags/hexo/">hexo</a><small>3</small></li>
+  
+    <li><a href="/tags/ios/">ios</a><small>5</small></li>
+  
+    <li><a href="/tags/life/">life</a><small>2</small></li>
+  
+    <li><a href="/tags/生活/">生活</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 house
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
